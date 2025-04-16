@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "670181669030",
+    "project_id": "mahalakshmi-traders-d7e14",
+    "storage_bucket": "mahalakshmi-traders-d7e14.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:670181669030:android:bb06bb5d93e2cd84a31c67",
+        "android_client_info": {
+          "package_name": "com.example.m_manage"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAVhj_1qL0kl_W30OEInULA78yJwnrUVfU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

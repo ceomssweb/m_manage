@@ -1,0 +1,11 @@
+{
+  "projects": {
+    "default": "mahalakshmi-traders-d7e14"
+  },
+  "targets": {},
+  "etags": {
+    "mahalakshmi-traders-d7e14": {
+      "extensionInstances": {}
+    }
+  }
+}
