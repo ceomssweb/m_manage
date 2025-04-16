@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:m_manage/billing_page.dart';
+import 'package:m_manage/documents_page.dart';
 import 'package:m_manage/product_page.dart';
 import 'package:m_manage/staff_management_page.dart';
 import 'custom_app_bar.dart'; // Import the custom app bar
@@ -44,6 +45,16 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const BillingPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt),
+              title: const Text('Documents'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DocumentsPage()),
                 );
               },
             ),

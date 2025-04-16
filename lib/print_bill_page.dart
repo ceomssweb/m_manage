@@ -128,16 +128,16 @@ class PrintBillPage extends StatelessWidget {
                   child: ListView.builder(
                     itemCount: items.length,
                     itemBuilder: (context, index) {
-                      final product = items[index];
-                      final double totalPrice = product['price'] * product['quantity'];
+                      final item = items[index];
+                      final double totalPrice = item['price'] * item['quantity'];
                       final double discountedPrice =
-                          totalPrice - (totalPrice * product['discount'] / 100);
+                          totalPrice - (totalPrice * item['discount'] / 100);
                       return Row(
                         children: [
-                          Expanded(child: Text(product['name'])),
-                          Expanded(child: Text('\$${product['price'].toStringAsFixed(2)}')),
-                          Expanded(child: Text('${product['quantity']}')),
-                          Expanded(child: Text('${product['discount']}%')),
+                          Expanded(child: Text(item['name'])),
+                          Expanded(child: Text('\$${item['price'].toStringAsFixed(2)}')),
+                          Expanded(child: Text('${item['quantity']}')),
+                          Expanded(child: Text('${item['discount']}%')),
                           Expanded(child: Text('\$${discountedPrice.toStringAsFixed(2)}')),
                         ],
                       );
