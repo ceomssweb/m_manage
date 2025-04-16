@@ -47,6 +47,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '670181669030',
     projectId: 'mahalakshmi-traders-d7e14',
     authDomain: 'mahalakshmi-traders-d7e14.firebaseapp.com',
+    databaseURL: 'https://mahalakshmi-traders-d7e14-default-rtdb.firebaseio.com',
     storageBucket: 'mahalakshmi-traders-d7e14.firebasestorage.app',
     measurementId: 'G-HKY5Z2NNJF',
   );
@@ -56,6 +57,7 @@ class DefaultFirebaseOptions {
     appId: '1:670181669030:android:bb06bb5d93e2cd84a31c67',
     messagingSenderId: '670181669030',
     projectId: 'mahalakshmi-traders-d7e14',
+    databaseURL: 'https://mahalakshmi-traders-d7e14-default-rtdb.firebaseio.com',
     storageBucket: 'mahalakshmi-traders-d7e14.firebasestorage.app',
   );
 
@@ -64,7 +66,9 @@ class DefaultFirebaseOptions {
     appId: '1:670181669030:ios:78df1232e71a5a22a31c67',
     messagingSenderId: '670181669030',
     projectId: 'mahalakshmi-traders-d7e14',
+    databaseURL: 'https://mahalakshmi-traders-d7e14-default-rtdb.firebaseio.com',
     storageBucket: 'mahalakshmi-traders-d7e14.firebasestorage.app',
+    iosClientId: '670181669030-dmalrgeqar8eakdquu2bfl62qkncllvc.apps.googleusercontent.com',
     iosBundleId: 'com.example.mManage',
   );
 
@@ -73,7 +77,9 @@ class DefaultFirebaseOptions {
     appId: '1:670181669030:ios:78df1232e71a5a22a31c67',
     messagingSenderId: '670181669030',
     projectId: 'mahalakshmi-traders-d7e14',
+    databaseURL: 'https://mahalakshmi-traders-d7e14-default-rtdb.firebaseio.com',
     storageBucket: 'mahalakshmi-traders-d7e14.firebasestorage.app',
+    iosClientId: '670181669030-dmalrgeqar8eakdquu2bfl62qkncllvc.apps.googleusercontent.com',
     iosBundleId: 'com.example.mManage',
   );
 
@@ -83,7 +89,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '670181669030',
     projectId: 'mahalakshmi-traders-d7e14',
     authDomain: 'mahalakshmi-traders-d7e14.firebaseapp.com',
+    databaseURL: 'https://mahalakshmi-traders-d7e14-default-rtdb.firebaseio.com',
     storageBucket: 'mahalakshmi-traders-d7e14.firebasestorage.app',
     measurementId: 'G-B9V4Z1MDNS',
   );
+
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 import 'custom_app_bar.dart'; // Import the custom app bar
 import 'print_bill_page.dart'; // Import the PrintBillPage
 
@@ -10,95 +11,102 @@ class BillingPage extends StatefulWidget {
 }
 
 class _BillingPageState extends State<BillingPage> {
-  final List<Map<String, dynamic>> _products = [
-    {'id': 1, 'name': 'Product A', 'price': 100.0, 'quantity': 2, 'discount': 10.0},
-    {'id': 2, 'name': 'Product B', 'price': 200.0, 'quantity': 1, 'discount': 0.0},
-  ];
-
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _issuedByController = TextEditingController();
+  final TextEditingController _issuedToController = TextEditingController();
+  final List<Map<String, dynamic>> _items = []; // Local list to store items temporarily
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
-  final TextEditingController _issuedByController = TextEditingController();
-  final TextEditingController _issuedToController = TextEditingController();
 
-  int? _editingIndex;
-
-  void _resetForm() {
-    _nameController.clear();
-    _priceController.clear();
-    _quantityController.clear();
-    _discountController.clear();
-    _editingIndex = null;
-  }
-
-  void _saveProduct() {
+  void _addItemLocally() {
     if (_formKey.currentState!.validate()) {
-      final String name = _nameController.text;
-      final double price = double.tryParse(_priceController.text) ?? 0.0;
-      final int quantity = int.tryParse(_quantityController.text) ?? 1;
-      final double discount = double.tryParse(_discountController.text) ?? 0.0;
+      final String name = _nameController.text.trim();
+      final double price = double.tryParse(_priceController.text.trim()) ?? 0.0;
+      final int quantity = int.tryParse(_quantityController.text.trim()) ?? 1;
+      final double discount = double.tryParse(_discountController.text.trim()) ?? 0.0;
 
       setState(() {
-        if (_editingIndex == null) {
-          // Add new product
-          _products.add({
-            'id': _products.length + 1,
-            'name': name,
-            'price': price,
-            'quantity': quantity,
-            'discount': discount,
-          });
-        } else {
-          // Update existing product
-          _products[_editingIndex!] = {
-            'id': _products[_editingIndex!]['id'],
-            'name': name,
-            'price': price,
-            'quantity': quantity,
-            'discount': discount,
-          };
-        }
+        _items.add({
+          'name': name,
+          'price': price,
+          'quantity': quantity,
+          'discount': discount,
+        });
       });
 
       _resetForm();
     }
   }
 
-  void _editProduct(int index) {
-    setState(() {
-      _editingIndex = index;
-      _nameController.text = _products[index]['name'];
-      _priceController.text = _products[index]['price'].toString();
-      _quantityController.text = _products[index]['quantity'].toString();
-      _discountController.text = _products[index]['discount'].toString();
-    });
-  }
-
-  void _deleteProduct(int index) {
-    setState(() {
-      _products.removeAt(index);
-    });
+  void _resetForm() {
+    _nameController.clear();
+    _priceController.clear();
+    _quantityController.clear();
+    _discountController.clear();
   }
 
   double _calculateTotal() {
-    return _products.fold(0.0, (sum, product) {
-      final double totalPrice = product['price'] * product['quantity'];
-      final double discount = product['discount'];
+    return _items.fold(0.0, (sum, item) {
+      final double totalPrice = item['price'] * item['quantity'];
+      final double discount = item['discount'];
       return sum + (totalPrice - (totalPrice * discount / 100));
     });
+  }
+
+  double _calculateTotalDiscount() {
+    return _items.fold(0.0, (sum, item) {
+      final double totalPrice = item['price'] * item['quantity'];
+      final double discount = item['discount'];
+      return sum + (totalPrice * discount / 100);
+    });
+  }
+
+  double _calculateGST() {
+    const double gstRate = 0.18; // 18% GST
+    return _calculateTotal() * gstRate;
+  }
+
+  double _calculateTotalWithGST() {
+    return _calculateTotal() + _calculateGST();
+  }
+
+  Future<void> _saveAndPrintBill() async {
+    try {
+      final double total = _calculateTotal();
+
+      // Save the billing data to Firestore
+      await FirebaseFirestore.instance.collection('bills').add({
+        'issuedBy': _issuedByController.text.trim(),
+        'issuedTo': _issuedToController.text.trim(),
+        'items': _items,
+        'total': total,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      // Trigger the print functionality
+      _printBill();
+    } catch (e) {
+      print('Error saving bill: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save bill. Please try again.')),
+      );
+    }
   }
 
   void _printBill() {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => PrintBillPage(
-          products: _products,
-          issuedBy: _issuedByController.text,
-          issuedTo: _issuedToController.text,
+          items: _items,
+          issuedBy: _issuedByController.text.trim(),
+          issuedTo: _issuedToController.text.trim(),
           total: _calculateTotal(),
-          logoPath: 'assets/images/logo/mt-logo.png', // Replace with your logo path
+          totalDiscount: _calculateTotalDiscount(),
+          gst: _calculateGST(),
+          totalWithGST: _calculateTotalWithGST(),
+          logoPath: 'assets/images/logo/mt-logo.png', // Ensure this path is correct
         ),
       ),
     );
@@ -118,7 +126,7 @@ class _BillingPageState extends State<BillingPage> {
                 children: [
                   TextFormField(
                     controller: _issuedByController,
-                    decoration: const InputDecoration(labelText: 'Bill Issued By'),
+                    decoration: const InputDecoration(labelText: 'Issued By'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter who issued the bill';
@@ -128,7 +136,7 @@ class _BillingPageState extends State<BillingPage> {
                   ),
                   TextFormField(
                     controller: _issuedToController,
-                    decoration: const InputDecoration(labelText: 'Bill Issued To'),
+                    decoration: const InputDecoration(labelText: 'Issued To'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter who the bill is issued to';
@@ -139,10 +147,10 @@ class _BillingPageState extends State<BillingPage> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Product Name'),
+                    decoration: const InputDecoration(labelText: 'Item Name'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter a product name';
+                        return 'Please enter an item name';
                       }
                       return null;
                     },
@@ -190,19 +198,9 @@ class _BillingPageState extends State<BillingPage> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ElevatedButton(
-                        onPressed: _saveProduct,
-                        child: Text(_editingIndex == null ? 'Add Product' : 'Update Product'),
-                      ),
-                      if (_editingIndex != null)
-                        TextButton(
-                          onPressed: _resetForm,
-                          child: const Text('Cancel'),
-                        ),
-                    ],
+                  ElevatedButton(
+                    onPressed: _addItemLocally,
+                    child: const Text('Add Item'),
                   ),
                 ],
               ),
@@ -215,50 +213,92 @@ class _BillingPageState extends State<BillingPage> {
                   children: [
                     DataTable(
                       columns: const [
-                        DataColumn(label: Text('ID')),
                         DataColumn(label: Text('Name')),
                         DataColumn(label: Text('Price')),
                         DataColumn(label: Text('Quantity')),
                         DataColumn(label: Text('Discount (%)')),
+                        DataColumn(label: Text('Total')), // Add Total column
                         DataColumn(label: Text('Actions')),
                       ],
-                      rows: _products.asMap().entries.map((entry) {
-                        int index = entry.key;
-                        Map<String, dynamic> product = entry.value;
+                      rows: _items.map((item) {
+                        final double totalPrice = item['price'] * item['quantity'];
+                        final double discountedPrice = totalPrice - (totalPrice * item['discount'] / 100);
+
                         return DataRow(cells: [
-                          DataCell(Text(product['id'].toString())),
-                          DataCell(Text(product['name'])),
-                          DataCell(Text(product['price'].toString())),
-                          DataCell(Text(product['quantity'].toString())),
-                          DataCell(Text(product['discount'].toString())),
+                          DataCell(Text(item['name'])),
+                          DataCell(Text(item['price'].toString())),
+                          DataCell(Text(item['quantity'].toString())),
+                          DataCell(Text(item['discount'].toString())),
+                          DataCell(Text(discountedPrice.toStringAsFixed(2))), // Display Total
                           DataCell(
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.blue),
-                                  onPressed: () => _editProduct(index),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => _deleteProduct(index),
-                                ),
-                              ],
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                setState(() {
+                                  _items.remove(item);
+                                });
+                              },
                             ),
                           ),
                         ]);
                       }).toList(),
                     ),
-                    const Divider(),
+                    const Divider(), // Add a divider for separation
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         const Text(
-                          'Total:',
+                          'Total Discount: ',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '\$${_calculateTotalDiscount().toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        const Text(
+                          'Grand Total (Before GST): ',
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           '\$${_calculateTotal().toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        const Text(
+                          'GST (18%): ',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '\$${_calculateGST().toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        const Text(
+                          'Grand Total (After GST): ',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '\$${_calculateTotalWithGST().toStringAsFixed(2)}',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ],
@@ -269,8 +309,8 @@ class _BillingPageState extends State<BillingPage> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _printBill,
-              child: const Text('Print Bill'),
+              onPressed: _items.isNotEmpty ? _saveAndPrintBill : null,
+              child: const Text('Save and Print Bill'),
             ),
           ],
         ),
