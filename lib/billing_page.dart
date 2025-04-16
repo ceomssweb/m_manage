@@ -198,118 +198,157 @@ class _BillingPageState extends State<BillingPage> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _addItemLocally,
-                    child: const Text('Add Item'),
-                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Column(
+            // Buttons Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton(
+                  onPressed: _addItemLocally,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white, // Contrast font color
+                  ),
+                  child: const Text('Add Item'),
+                ),
+                Row(
                   children: [
-                    DataTable(
-                      columns: const [
-                        DataColumn(label: Text('Name')),
-                        DataColumn(label: Text('Price')),
-                        DataColumn(label: Text('Quantity')),
-                        DataColumn(label: Text('Discount (%)')),
-                        DataColumn(label: Text('Total')), // Add Total column
-                        DataColumn(label: Text('Actions')),
-                      ],
-                      rows: _items.map((item) {
-                        final double totalPrice = item['price'] * item['quantity'];
-                        final double discountedPrice = totalPrice - (totalPrice * item['discount'] / 100);
-
-                        return DataRow(cells: [
-                          DataCell(Text(item['name'])),
-                          DataCell(Text(item['price'].toString())),
-                          DataCell(Text(item['quantity'].toString())),
-                          DataCell(Text(item['discount'].toString())),
-                          DataCell(Text(discountedPrice.toStringAsFixed(2))), // Display Total
-                          DataCell(
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () {
-                                setState(() {
-                                  _items.remove(item);
-                                });
-                              },
-                            ),
-                          ),
-                        ]);
-                      }).toList(),
+                    ElevatedButton(
+                      onPressed: _resetForm,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white, // Contrast font color
+                      ),
+                      child: const Text('Reset Form'),
                     ),
-                    const Divider(), // Add a divider for separation
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        const Text(
-                          'Total Discount: ',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '\$${_calculateTotalDiscount().toStringAsFixed(2)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        const Text(
-                          'Grand Total (Before GST): ',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '\$${_calculateTotal().toStringAsFixed(2)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        const Text(
-                          'GST (18%): ',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '\$${_calculateGST().toStringAsFixed(2)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        const Text(
-                          'Grand Total (After GST): ',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '\$${_calculateTotalWithGST().toStringAsFixed(2)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ],
+                    const SizedBox(width: 8), // Add spacing between buttons
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _items.clear(); // Clear all items
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white, // Contrast font color
+                      ),
+                      child: const Text('Cancel All'),
                     ),
                   ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Scrollable Table Section
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical, // Enable vertical scrolling
+                child: DataTable(
+                  columns: const [
+                    DataColumn(label: Text('Name')),
+                    DataColumn(label: Text('Price')),
+                    DataColumn(label: Text('Quantity')),
+                    DataColumn(label: Text('Discount (%)')),
+                    DataColumn(label: Text('Total')),
+                    DataColumn(label: Text('Actions')),
+                  ],
+                  rows: _items.map((item) {
+                    final double totalPrice = item['price'] * item['quantity'];
+                    final double discountedPrice = totalPrice - (totalPrice * item['discount'] / 100);
+
+                    return DataRow(cells: [
+                      DataCell(Text(item['name'])),
+                      DataCell(Text(item['price'].toString())),
+                      DataCell(Text(item['quantity'].toString())),
+                      DataCell(Text(item['discount'].toString())),
+                      DataCell(Text(discountedPrice.toStringAsFixed(2))),
+                      DataCell(
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () {
+                            setState(() {
+                              _items.remove(item);
+                            });
+                          },
+                        ),
+                      ),
+                    ]);
+                  }).toList(),
                 ),
               ),
             ),
             const SizedBox(height: 16),
+            // Totals Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Text(
+                  'Total Discount: ',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '\$${_calculateTotalDiscount().toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Text(
+                  'Grand Total (Before GST): ',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '\$${_calculateTotal().toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Text(
+                  'GST (18%): ',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '\$${_calculateGST().toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Text(
+                  'Grand Total (After GST): ',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '\$${_calculateTotalWithGST().toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Save and Print Button at the Bottom
             ElevatedButton(
               onPressed: _items.isNotEmpty ? _saveAndPrintBill : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white, // Contrast font color
+                minimumSize: const Size(double.infinity, 50), // Full-width button
+              ),
               child: const Text('Save and Print Bill'),
             ),
           ],
