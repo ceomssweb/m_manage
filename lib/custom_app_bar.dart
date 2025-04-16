@@ -16,7 +16,18 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         fit: BoxFit.contain,
         height: 40, // Adjust the height of the logo
       ),
-      backgroundColor: Colors.deepPurple,
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              Colors.deepPurple, // Start color
+              Colors.purpleAccent, // End color
+            ],
+          ),
+        ),
+      ),
       actions: const [
         Padding(
           padding: EdgeInsets.only(right: 16.0),
@@ -37,6 +48,7 @@ class AnimatedDateTime extends StatefulWidget {
   const AnimatedDateTime({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _AnimatedDateTimeState createState() => _AnimatedDateTimeState();
 }
 
