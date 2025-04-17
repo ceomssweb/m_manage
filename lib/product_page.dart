@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:m_manage/custom_app_bar.dart';
 
 class ProductPage extends StatelessWidget {
   const ProductPage({super.key});
@@ -6,9 +7,8 @@ class ProductPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Product Page'),
-        backgroundColor: Colors.deepPurple,
+      appBar: CustomAppBar(
+        title: 'Product Page',
       ),
       body: const Center(
         child: Text('Welcome to the Product Page!'),
