@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:m_manage/billing_page.dart';
 import 'package:m_manage/documents_page.dart';
+import 'package:m_manage/file_manager_page.dart';
 import 'package:m_manage/product_page.dart';
 import 'package:m_manage/staff_management_page.dart';
 import 'custom_app_bar.dart'; // Import the custom app bar
+import 'package:m_manage/admin_page.dart'; // Import the Admin Page
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final List<Map<String, dynamic>> _products = []; // Shared product list
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +53,9 @@ class HomePage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const BillingPage()),
+                  MaterialPageRoute(
+                    builder: (context) => BillingPage(products: _products),
+                  ),
                 );
               },
             ),
@@ -64,7 +75,20 @@ class HomePage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ProductPage()),
+                  MaterialPageRoute(
+                    builder: (context) => ProductPage(products: _products),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.shopping_cart),
+              title: const Text('File Manager'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const FileManagerPage(),
+                  ),
                 );
               },
             ),
@@ -75,6 +99,16 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const StaffManagementPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.admin_panel_settings),
+              title: const Text('Admin'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminPage()),
                 );
               },
             ),

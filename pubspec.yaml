@@ -39,7 +39,9 @@ dependencies:
   firebase_data_connect: ^0.1.0
   printing: ^5.11.0
   pdf: ^3.11.3
-  cloud_firestore: 5.6.6 # For Firestore
+  cloud_firestore: ^5.6.6
+  firebase_storage: 12.4.5
+  image_picker: ^0.8.7+4
 
 dev_dependencies:
   flutter_test:
@@ -84,7 +86,7 @@ flutter:
   #       - asset: fonts/Schyler-Italic.ttf
   #         style: italic
   #   - family: Trajan Pro
-  #     fonts:
+  #       fonts:
   #       - asset: fonts/TrajanPro.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700

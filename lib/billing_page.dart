@@ -4,7 +4,9 @@ import 'custom_app_bar.dart'; // Import the custom app bar
 import 'print_bill_page.dart'; // Import the PrintBillPage
 
 class BillingPage extends StatefulWidget {
-  const BillingPage({super.key});
+  final List<Map<String, dynamic>> products;
+
+  const BillingPage({super.key, required this.products});
 
   @override
   _BillingPageState createState() => _BillingPageState();
@@ -15,14 +17,21 @@ class _BillingPageState extends State<BillingPage> {
   final TextEditingController _issuedByController = TextEditingController();
   final TextEditingController _issuedToController = TextEditingController();
   final List<Map<String, dynamic>> _items = []; // Local list to store items temporarily
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
+  Map<String, dynamic>? _selectedProduct;
+
+  void _onProductSelected(Map<String, dynamic>? product) {
+    setState(() {
+      _selectedProduct = product;
+      _priceController.text = product != null ? product['price'].toString() : '';
+    });
+  }
 
   void _addItemLocally() {
-    if (_formKey.currentState!.validate()) {
-      final String name = _nameController.text.trim();
+    if (_formKey.currentState!.validate() && _selectedProduct != null) {
+      final String name = _selectedProduct!['name'];
       final double price = double.tryParse(_priceController.text.trim()) ?? 0.0;
       final int quantity = int.tryParse(_quantityController.text.trim()) ?? 1;
       final double discount = double.tryParse(_discountController.text.trim()) ?? 0.0;
@@ -41,7 +50,7 @@ class _BillingPageState extends State<BillingPage> {
   }
 
   void _resetForm() {
-    _nameController.clear();
+    _selectedProduct = null;
     _priceController.clear();
     _quantityController.clear();
     _discountController.clear();
@@ -145,30 +154,24 @@ class _BillingPageState extends State<BillingPage> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Item Name'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter an item name';
-                      }
-                      return null;
-                    },
+                  DropdownButtonFormField<Map<String, dynamic>>(
+                    value: _selectedProduct,
+                    items: widget.products.map((product) {
+                      return DropdownMenuItem(
+                        value: product,
+                        child: Text(product['name']),
+                      );
+                    }).toList(),
+                    onChanged: _onProductSelected,
+                    decoration: const InputDecoration(labelText: 'Select Product'),
                   ),
-                  TextFormField(
+                  const SizedBox(height: 16),
+                  TextField(
                     controller: _priceController,
                     decoration: const InputDecoration(labelText: 'Price'),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a price';
-                      }
-                      if (double.tryParse(value) == null) {
-                        return 'Please enter a valid number';
-                      }
-                      return null;
-                    },
+                    readOnly: true,
                   ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _quantityController,
                     decoration: const InputDecoration(labelText: 'Quantity'),

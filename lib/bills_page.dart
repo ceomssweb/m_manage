@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'bill_details_page.dart'; // Assuming you have this for details
 
 class BillsPage extends StatefulWidget {
   const BillsPage({super.key});

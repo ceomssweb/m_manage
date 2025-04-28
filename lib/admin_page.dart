@@ -1,29 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:m_manage/all_products_page.dart';
-import 'package:m_manage/product_report_page.dart';
+import 'package:m_manage/client_admin_page.dart';
 
-class ProductPage extends StatelessWidget {
-  final List<Map<String, dynamic>> products;
-
-  const ProductPage({super.key, required this.products});
+class AdminPage extends StatelessWidget {
+  const AdminPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Product Management'),
+        title: const Text('Admin Page'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // All Products Widget
+            // Client Admin Widget
             GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => AllProductsPage(products: products),
+                    builder: (context) => const ClientAdminPage(),
                   ),
                 );
               },
@@ -33,10 +30,10 @@ class ProductPage extends StatelessWidget {
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
                     children: const [
-                      Icon(Icons.list, size: 40, color: Colors.blue),
+                      Icon(Icons.business, size: 40, color: Colors.blue),
                       SizedBox(width: 16),
                       Text(
-                        'All Products',
+                        'Client Admin',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -45,15 +42,10 @@ class ProductPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            // Product Report Widget
+            // Super Admin Widget
             GestureDetector(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ProductReportPage(),
-                  ),
-                );
+                // Add navigation for Super Admin functionality here
               },
               child: Card(
                 elevation: 4,
@@ -61,10 +53,10 @@ class ProductPage extends StatelessWidget {
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
                     children: const [
-                      Icon(Icons.bar_chart, size: 40, color: Colors.green),
+                      Icon(Icons.security, size: 40, color: Colors.green),
                       SizedBox(width: 16),
                       Text(
-                        'Product Report',
+                        'Super Admin',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ],
