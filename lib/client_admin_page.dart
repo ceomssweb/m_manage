@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ClientAdminPage extends StatefulWidget {
   const ClientAdminPage({super.key});
@@ -12,45 +13,53 @@ class ClientAdminPage extends StatefulWidget {
 class _ClientAdminPageState extends State<ClientAdminPage> {
   final TextEditingController _companyNameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _gstController = TextEditingController();
+  final TextEditingController _gstController = TextEditingController(); // GST Controller
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _faxController = TextEditingController();
-  File? _logo;
-  List<File> _shopImages = [];
-  List<File> _certificates = [];
+  Uint8List? _logoBytes;
+  String? _documentId;
 
-  Future<void> _pickLogo() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+  @override
+  void initState() {
+    super.initState();
+    _loadCompanyDetails();
+  }
+
+  Future<void> _loadCompanyDetails() async {
+    final snapshot = await FirebaseFirestore.instance.collection('company_detail').get();
+    if (snapshot.docs.isNotEmpty) {
+      final data = snapshot.docs.first.data();
+      _documentId = snapshot.docs.first.id;
       setState(() {
-        _logo = File(pickedFile.path);
+        _companyNameController.text = data['name'] ?? '';
+        _addressController.text = data['address'] ?? '';
+        _gstController.text = data['gst'] ?? '18'; // Default GST to 18% if not set
+        _phoneController.text = data['phone'] ?? '';
+        _faxController.text = data['fax'] ?? '';
       });
     }
   }
 
-  Future<void> _pickShopImages() async {
-    final picker = ImagePicker();
-    final pickedFiles = await picker.pickMultiImage();
-    if (pickedFiles != null) {
-      setState(() {
-        _shopImages = pickedFiles.map((file) => File(file.path)).toList();
-      });
-    }
-  }
+  Future<void> _saveDetails() async {
+    final companyDetails = {
+      'name': _companyNameController.text,
+      'address': _addressController.text,
+      'gst': _gstController.text, // Save GST to the database
+      'phone': _phoneController.text,
+      'fax': _faxController.text,
+    };
 
-  Future<void> _pickCertificates() async {
-    final picker = ImagePicker();
-    final pickedFiles = await picker.pickMultiImage();
-    if (pickedFiles != null) {
-      setState(() {
-        _certificates = pickedFiles.map((file) => File(file.path)).toList();
-      });
+    if (_documentId == null) {
+      // Add new company details
+      await FirebaseFirestore.instance.collection('company_detail').add(companyDetails);
+    } else {
+      // Update existing company details
+      await FirebaseFirestore.instance
+          .collection('company_detail')
+          .doc(_documentId)
+          .update(companyDetails);
     }
-  }
 
-  void _saveDetails() {
-    // Save company details logic here
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Company details saved successfully')),
     );
@@ -79,7 +88,8 @@ class _ClientAdminPageState extends State<ClientAdminPage> {
               const SizedBox(height: 8),
               TextField(
                 controller: _gstController,
-                decoration: const InputDecoration(labelText: 'GST Number'),
+                decoration: const InputDecoration(labelText: 'GST (%)'),
+                keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 8),
               TextField(
@@ -92,29 +102,6 @@ class _ClientAdminPageState extends State<ClientAdminPage> {
                 controller: _faxController,
                 decoration: const InputDecoration(labelText: 'Fax Number'),
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _pickLogo,
-                child: const Text('Upload Company Logo'),
-              ),
-              if (_logo != null)
-                const Text('Logo Selected', style: TextStyle(color: Colors.green)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _pickShopImages,
-                child: const Text('Upload Shop Images'),
-              ),
-              if (_shopImages.isNotEmpty)
-                Text('${_shopImages.length} Shop Images Selected',
-                    style: const TextStyle(color: Colors.green)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _pickCertificates,
-                child: const Text('Upload Certificates'),
-              ),
-              if (_certificates.isNotEmpty)
-                Text('${_certificates.length} Certificates Selected',
-                    style: const TextStyle(color: Colors.green)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _saveDetails,

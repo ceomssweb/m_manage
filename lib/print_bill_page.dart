@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for rootBundle
 import 'package:printing/printing.dart'; // Import the printing package
 import 'package:pdf/widgets.dart' as pw;
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 
 class PrintBillPage extends StatelessWidget {
   final List<Map<String, dynamic>> items;
@@ -25,190 +26,224 @@ class PrintBillPage extends StatelessWidget {
     required this.logoPath,
   });
 
+  Future<Map<String, String>> _fetchCompanyDetails() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('company_detail').get();
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        return {
+          'name': data['name'] ?? 'Unknown Company',
+          'address': data['address'] ?? 'Unknown Address',
+          'phone': data['phone'] ?? 'Unknown Phone',
+          'fax': data['fax'] ?? 'Unknown Fax',
+        };
+      }
+    } catch (e) {
+      print('Error fetching company details: $e');
+    }
+    return {
+      'name': 'Unknown Company',
+      'address': 'Unknown Address',
+      'phone': 'Unknown Phone',
+      'fax': 'Unknown Fax',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final String currentDateTime = _getCurrentDateTime(); // Get current date and time
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Print Bill'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.print),
-            onPressed: () => _printBill(context), // Call the print function
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // Watermarked background
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.1, // Adjust opacity for watermark effect
-              child: Image.asset(
-                logoPath, // Path to the product logo
-                fit: BoxFit.cover,
+    return FutureBuilder<Map<String, String>>(
+      future: _fetchCompanyDetails(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final companyDetails = snapshot.data!;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Print Bill'),
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.print),
+                onPressed: () => _printBill(context, companyDetails), // Call the print function
               ),
-            ),
+            ],
           ),
-          // Bill content
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header with Logo, Company Details, and Date/Time
-                Row(
+          body: Stack(
+            children: [
+              // Watermarked background
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 0.1, // Adjust opacity for watermark effect
+                  child: Image.asset(
+                    logoPath, // Path to the product logo
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              // Bill content
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Logo
-                    Image.asset(
-                      logoPath,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(width: 16),
-                    // Company Details
-                    Column(
+                    // Header with Logo, Company Details, and Date/Time
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Company Name',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      children: [
+                        // Logo
+                        Image.asset(
+                          logoPath,
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.contain,
                         ),
-                        Text(
-                          'Address Line 1',
-                          style: TextStyle(fontSize: 16),
+                        const SizedBox(width: 16),
+                        // Company Details
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              companyDetails['name']!,
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              companyDetails['address']!,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            Text(
+                              'Phone: ${companyDetails['phone']}',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            Text(
+                              'Fax: ${companyDetails['fax']}',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ],
                         ),
+                        const Spacer(),
+                        // Date and Time
                         Text(
-                          'Address Line 2',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        Text(
-                          'Phone: +1 234 567 890',
-                          style: TextStyle(fontSize: 16),
+                          currentDateTime,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
-                    const Spacer(),
-                    // Date and Time
+                    const SizedBox(height: 16),
+                    // Issued By and Issued To
                     Text(
-                      currentDateTime,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      'Bill Issued By: $issuedBy',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Issued By and Issued To
-                Text(
-                  'Bill Issued By: $issuedBy',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Bill Issued To: $issuedTo',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                // Table Header
-                Row(
-                  children: const [
-                    Expanded(child: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                    Expanded(child: Text('Price', style: TextStyle(fontWeight: FontWeight.bold))),
-                    Expanded(child: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
-                    Expanded(child: Text('Discount', style: TextStyle(fontWeight: FontWeight.bold))),
-                    Expanded(child: Text('Total', style: TextStyle(fontWeight: FontWeight.bold))),
-                  ],
-                ),
-                const Divider(),
-                // Table Rows
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: items.length,
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      final double totalPrice = item['price'] * item['quantity'];
-                      final double discountedPrice =
-                          totalPrice - (totalPrice * item['discount'] / 100);
-                      return Row(
-                        children: [
-                          Expanded(child: Text(item['name'])),
-                          Expanded(child: Text('\$${item['price'].toStringAsFixed(2)}')),
-                          Expanded(child: Text('${item['quantity']}')),
-                          Expanded(child: Text('${item['discount']}%')),
-                          Expanded(child: Text('\$${discountedPrice.toStringAsFixed(2)}')),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-                const Divider(),
-                // Total Discount
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Total Discount:',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
+                    const SizedBox(height: 8),
                     Text(
-                      '\$${totalDiscount.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      'Bill Issued To: $issuedTo',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    // Table Header
+                    Row(
+                      children: const [
+                        Expanded(child: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
+                        Expanded(child: Text('Price', style: TextStyle(fontWeight: FontWeight.bold))),
+                        Expanded(child: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
+                        Expanded(child: Text('Discount', style: TextStyle(fontWeight: FontWeight.bold))),
+                        Expanded(child: Text('Total', style: TextStyle(fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                    const Divider(),
+                    // Table Rows
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          final double totalPrice = item['price'] * item['quantity'];
+                          final double discountedPrice =
+                              totalPrice - (totalPrice * item['discount'] / 100);
+                          return Row(
+                            children: [
+                              Expanded(child: Text(item['name'])),
+                              Expanded(child: Text('\$${item['price'].toStringAsFixed(2)}')),
+                              Expanded(child: Text('${item['quantity']}')),
+                              Expanded(child: Text('${item['discount']}%')),
+                              Expanded(child: Text('\$${discountedPrice.toStringAsFixed(2)}')),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                    const Divider(),
+                    // Total Discount
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Total Discount:',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        Text(
+                          '\$${totalDiscount.toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Grand Total (Before GST)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Grand Total (Before GST):',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        Text(
+                          '\$${total.toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // GST
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'GST (18%):',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        Text(
+                          '\$${gst.toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Grand Total (After GST)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Grand Total (After GST):',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        Text(
+                          '\$${totalWithGST.toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                // Grand Total (Before GST)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Grand Total (Before GST):',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    Text(
-                      '\$${total.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // GST
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'GST (18%):',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    Text(
-                      '\$${gst.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Grand Total (After GST)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Grand Total (After GST):',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    Text(
-                      '\$${totalWithGST.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -217,7 +252,7 @@ class PrintBillPage extends StatelessWidget {
     return '${now.day}/${now.month}/${now.year} ${now.hour}:${now.minute}';
   }
 
-  Future<void> _printBill(BuildContext context) async {
+  Future<void> _printBill(BuildContext context, Map<String, String> companyDetails) async {
     final pdf = pw.Document();
 
     try {
@@ -251,13 +286,12 @@ class PrintBillPage extends StatelessWidget {
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
                         pw.Text(
-                          'Company Name',
+                          companyDetails['name']!,
                           style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
                         ),
-                        pw.Text('Address Line 1', style: pw.TextStyle(fontSize: 12)),
-                        pw.Text('Address Line 2', style: pw.TextStyle(fontSize: 12)),
-                        pw.Text('Phone: +1 234 567 890', style: pw.TextStyle(fontSize: 12)),
-                        pw.Text('Email: info@company.com', style: pw.TextStyle(fontSize: 12)),
+                        pw.Text(companyDetails['address']!, style: pw.TextStyle(fontSize: 12)),
+                        pw.Text('Phone: ${companyDetails['phone']}', style: pw.TextStyle(fontSize: 12)),
+                        pw.Text('Fax: ${companyDetails['fax']}', style: pw.TextStyle(fontSize: 12)),
                       ],
                     ),
                     // Date and Time

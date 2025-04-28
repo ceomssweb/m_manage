@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'custom_app_bar.dart'; // Import the custom app bar
 import 'print_bill_page.dart'; // Import the PrintBillPage
 
 class BillingPage extends StatefulWidget {
   final List<Map<String, dynamic>> products;
-
   const BillingPage({super.key, required this.products});
 
   @override
@@ -21,11 +20,37 @@ class _BillingPageState extends State<BillingPage> {
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
   Map<String, dynamic>? _selectedProduct;
+  double _gstRate = 0.18; // Default GST rate (18%)
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCompanyDetails();
+  }
+
+  Future<void> _loadCompanyDetails() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('company_detail').get();
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        setState(() {
+          _issuedByController.text = data['name'] ?? 'Unknown Company';
+          _gstRate = double.tryParse(data['gst'] ?? '18')! / 100; // Convert GST to decimal
+        });
+      }
+    } catch (e) {
+      print('Error fetching company details: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load company details.')),
+      );
+    }
+  }
 
   void _onProductSelected(Map<String, dynamic>? product) {
     setState(() {
       _selectedProduct = product;
       _priceController.text = product != null ? product['price'].toString() : '';
+      _discountController.text = product != null ? product['discount'].toString() : '';
     });
   }
 
@@ -73,8 +98,7 @@ class _BillingPageState extends State<BillingPage> {
   }
 
   double _calculateGST() {
-    const double gstRate = 0.18; // 18% GST
-    return _calculateTotal() * gstRate;
+    return _calculateTotal() * _gstRate;
   }
 
   double _calculateTotalWithGST() {
@@ -91,6 +115,7 @@ class _BillingPageState extends State<BillingPage> {
         'issuedTo': _issuedToController.text.trim(),
         'items': _items,
         'total': total,
+        'gstRate': _gstRate * 100, // Save GST as a percentage
         'timestamp': FieldValue.serverTimestamp(),
       });
 
@@ -136,12 +161,7 @@ class _BillingPageState extends State<BillingPage> {
                   TextFormField(
                     controller: _issuedByController,
                     decoration: const InputDecoration(labelText: 'Issued By'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter who issued the bill';
-                      }
-                      return null;
-                    },
+                    readOnly: true,
                   ),
                   TextFormField(
                     controller: _issuedToController,
@@ -154,16 +174,43 @@ class _BillingPageState extends State<BillingPage> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<Map<String, dynamic>>(
-                    value: _selectedProduct,
-                    items: widget.products.map((product) {
-                      return DropdownMenuItem(
-                        value: product,
-                        child: Text(product['name']),
+                  // Product Dropdown
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance.collection('products').snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const CircularProgressIndicator();
+                      }
+
+                      final products = snapshot.data!.docs.map((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        return {
+                          'id': doc.id,
+                          'name': data['name'],
+                          'price': data['price'],
+                          'discount': data['discount'],
+                        };
+                      }).toList();
+
+                      return DropdownButtonFormField<String>(
+                        value: _selectedProduct?['id'], // Use the product ID as the value
+                        items: products.map((product) {
+                          return DropdownMenuItem<String>(
+                            value: product['id'], // Use the product ID as the unique value
+                            child: Text('${product['name']} (₹${product['price']})'),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          final selectedProduct = products.firstWhere((product) => product['id'] == value);
+                          setState(() {
+                            _selectedProduct = selectedProduct;
+                            _priceController.text = selectedProduct['price'].toString();
+                            _discountController.text = selectedProduct['discount']?.toString() ?? '0';
+                          });
+                        },
+                        decoration: const InputDecoration(labelText: 'Select Product'),
                       );
-                    }).toList(),
-                    onChanged: _onProductSelected,
-                    decoration: const InputDecoration(labelText: 'Select Product'),
+                    },
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -244,10 +291,10 @@ class _BillingPageState extends State<BillingPage> {
               ],
             ),
             const SizedBox(height: 16),
-            // Scrollable Table Section
+            // Table Section
             Expanded(
               child: SingleChildScrollView(
-                scrollDirection: Axis.vertical, // Enable vertical scrolling
+                scrollDirection: Axis.vertical,
                 child: DataTable(
                   columns: const [
                     DataColumn(label: Text('Name')),
@@ -317,9 +364,9 @@ class _BillingPageState extends State<BillingPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                const Text(
-                  'GST (18%): ',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                Text(
+                  'GST (${(_gstRate * 100).toStringAsFixed(2)}%): ',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(width: 8),
                 Text(
